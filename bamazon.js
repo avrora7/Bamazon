@@ -78,7 +78,7 @@ function itemSelect() {
 function runPurchase(itemId, qty) {
     var query = "UPDATE products SET stock_quantity = stock_quantity - ? WHERE item_id = ?";
     connection.query(query, [qty, itemId], function (err, res) {
-        console.log("You purchase is sucessfully completed!")
+        console.log("You purchase was sucessful!")
         connection.end();
         return true
     });

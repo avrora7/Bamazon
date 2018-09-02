@@ -77,8 +77,13 @@ function itemSelect() {
         .then(function (answer) {
             var query = "SELECT stock_quantity FROM products WHERE item_id = ?";
             connection.query(query, [answer.idSelection], function (err, res) {
-                if (answer.quantitySelection > res[0].stock_quantity) {
+                if (res.length === 0) {
+                    console.log("Incorrect item id. \nChoose item id from the list above\n");
+                    start();
+                }
+                else if (answer.quantitySelection > res[0].stock_quantity) {
                     console.log("Insufficient quantity!");
+                    console.log("Choose smaller quantity or another item from the list");
                     start();
                 } else {
                     runPurchase(answer.idSelection, answer.quantitySelection);

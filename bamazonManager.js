@@ -130,24 +130,25 @@ function inventoryAdd() {
                         console.log("This item id does not exist");
                         console.log("************************\n");
                         runSearch();
-                    }
+                    } else {
 
-                    // function to add specific amount of items to inventory
-                    inquirer
-                        .prompt([{
-                            name: "inputAmount",
-                            type: "input",
-                            message: "Enter quantity of units you would you like to add: ",
-                        }
-                        ]).then(function (managerAdd) {
-                            connection.query("UPDATE products SET stock_quantity = stock_quantity + ? WHERE item_id = ?", [
-                                managerAdd.inputAmount, managerCheck.inputId], function (err, res) {
-                                    if (err) throw err;
-                                    console.log("Item(s) added to inventory");
-                                    console.log("************************\n");
-                                    runSearch();
-                                });
-                        })
+                        // function to add specific amount of items to inventory
+                        inquirer
+                            .prompt([{
+                                name: "inputAmount",
+                                type: "input",
+                                message: "Enter quantity of units you would you like to add: ",
+                            }
+                            ]).then(function (managerAdd) {
+                                connection.query("UPDATE products SET stock_quantity = stock_quantity + ? WHERE item_id = ?", [
+                                    managerAdd.inputAmount, managerCheck.inputId], function (err, res) {
+                                        if (err) throw err;
+                                        console.log("Item(s) added to inventory");
+                                        console.log("************************\n");
+                                        runSearch();
+                                    });
+                            })
+                    }
                 }
             )
         });

@@ -23,7 +23,7 @@ connection.connect(function (err) {
     runSearch();
 });
 
-// questions to take further actions
+// function to set questions choices
 function runSearch() {
     inquirer
         .prompt({
@@ -34,7 +34,8 @@ function runSearch() {
                 "View Products for Sale",
                 "View Low Inventory",
                 "Add to Inventory",
-                "Add New Product"
+                "Add New Product",
+                "Exit"
             ]
         })
         .then(function (answer) {
@@ -54,6 +55,10 @@ function runSearch() {
                 case "Add New Product":
                     newProductAdd();
                     break;
+
+                case "Exit":
+                    connection.end();
+                    return true;
             }
         });
 }
@@ -62,9 +67,11 @@ function runSearch() {
 function productSaleSearch() {
     var query = "SELECT item_id, product_name, price, stock_quantity FROM products"
     connection.query(query, function (err, res) {
+        if (err) throw err;
         for (var i = 0; i < res.length; i++) {
             console.log(res[i].item_id + ". " + res[i].product_name + " ($" + res[i].price + ") " + res[i].stock_quantity + " unit(s)");
         }
+        console.log("\n************************");
         runSearch();
     });
 }
@@ -76,6 +83,7 @@ function lowInventorySearch() {
         for (var i = 0; i < res.length; i++) {
             console.log("==> " + res[i].item_id + ". " + res[i].product_name + " ($" + res[i].price + ") " + res[i].stock_quantity + " unit(s)");
             console.log("End of low inventory list");
+            console.log("\n************************");
         }
         runSearch();
     });
@@ -88,26 +96,32 @@ function inventoryAdd() {
             name: "inputId",
             type: "input",
             message: "Enter the id number of the item you would like to add to the inventory",
-        },
-        {
-            name: "inputAmount",
-            type: "input",
-            message: "How many units of this item would you like to add?",
         }
-        ]).then(function (managerAdd) {
+
+            // function to check if id # exists
+        ]).then(function (managerCheck) {
             connection.query("SELECT count(*) AS quantity FROM products WHERE item_id = ?",
-                [managerAdd.inputId], function (err, res) {
+                [managerCheck.inputId], function (err, res) {
                     if (res[0].quantity === 0) {
-                        console.log("This item id does not exist")
-                        return false
+                        console.log("This item id does not exist");
+                        console.log("\n************************");
+                        connection.end();
+                        return false;
                     }
-                    connection.query("UPDATE products SET ? WHERE ?", [{
-                        stock_quantity: managerAdd.inputAmount
-                    }, {
-                        item_id: managerAdd.inputId
-                    }], function (err, res) {
-                        runSearch();
-                    });
+
+                    // function to add specific amount of items to inventory
+                    inquirer
+                        .prompt([{
+                            name: "inputAmount",
+                            type: "input",
+                            message: "How many units of this item would you like to add?",
+                        }
+                        ]).then(function (managerAdd) {
+                            connection.query("UPDATE products SET stock_quantity = stock_quantity + ? WHERE item_id = ?", [
+                                managerAdd.inputAmount, managerCheck.inputId], function (err, res) {
+                                    runSearch();
+                                });
+                        })
                 }
             )
         });
@@ -117,11 +131,6 @@ function inventoryAdd() {
 function newProductAdd() {
     inquirer
         .prompt([{
-            name: "inputId",
-            type: "input",
-            message: "Enter the id number of the item you would like to add to the inventory",
-        },
-        {
             name: "inputName",
             type: "input",
             message: "Enter the item name you would like to add to the inventory",
@@ -142,15 +151,16 @@ function newProductAdd() {
             message: "Enter the amount of units to be added",
         }
         ]).then(function (managerNewAdd) {
-            connection.query("UPDATE products SET ?", [{
-                item_id: managerNewAdd.inputId,
+            connection.query("INSERT INTO products SET ?", [{
                 product_name: managerNewAdd.inputName,
                 department_name: managerNewAdd.inputDept,
                 price: managerNewAdd.inputPrice,
                 stock_quantity: managerNewAdd.inputAmount
             }], function (err, res) {
+                if (err != null) {
+                    console.log(err);
+                }
             });
             runSearch();
-            connection.end();
         });
 }

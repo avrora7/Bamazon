@@ -20,6 +20,7 @@ var connection = mysql.createConnection({
 connection.connect(function (err) {
     if (err) throw err;
     // run the start function after the connection is made to prompt the user
+    console.log("\n************************");
     start();
 });
 
@@ -30,6 +31,7 @@ function start() {
         for (var i = 0; i < res.length; i++) {
             console.log(res[i].item_id + ". " + res[i].product_name + " ($" + res[i].price + ")");
         }
+        console.log("\n************************");
         itemSelect();
     });
 }
@@ -45,7 +47,7 @@ function itemSelect() {
                     if (isNaN(value) === false) {
                         return true;
                     }
-                    console.log("  Your selection must be a number")
+                    console.log("\nYour selection must be a number");
                     return false;
                 }
             },
@@ -57,8 +59,7 @@ function itemSelect() {
                     if (isNaN(value) === false) {
                         return true;
                     }
-                    console.log("  Your selection must be a number")
-                    connection.end();
+                    console.log("\nYour selection must be a number");
                     return false;
                 }
             }
@@ -67,8 +68,8 @@ function itemSelect() {
             var query = "SELECT stock_quantity FROM products WHERE item_id = ?";
             connection.query(query, [answer.idSelection], function (err, res) {
                 if (answer.quantitySelection > res[0].stock_quantity) {
-                    console.log("Insufficient quantity!")
-                    return false
+                    console.log("Insufficient quantity!");
+                    return false;
                 }
                 runPurchase(answer.idSelection, answer.quantitySelection);
             });
@@ -78,8 +79,8 @@ function itemSelect() {
 function runPurchase(itemId, qty) {
     var query = "UPDATE products SET stock_quantity = stock_quantity - ? WHERE item_id = ?";
     connection.query(query, [qty, itemId], function (err, res) {
-        console.log("You purchase was sucessful!")
+        console.log("You purchase was sucessful!");
         connection.end();
-        return true
+        return true;
     });
 }

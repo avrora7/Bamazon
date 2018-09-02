@@ -1,5 +1,6 @@
 var mysql = require("mysql");
 var inquirer = require("inquirer");
+var Table = require("cli-table");
 
 // create the connection information for the sql database
 var connection = mysql.createConnection({
@@ -65,25 +66,48 @@ function runSearch() {
 
 // function to print items available for sale
 function productSaleSearch() {
-    var query = "SELECT item_id, product_name, price, stock_quantity FROM products"
+    var query = "SELECT item_id, product_name, department_name, price, stock_quantity FROM products"
     connection.query(query, function (err, res) {
         if (err) throw err;
+
+        // instantiate
+        var table = new Table({
+            head: ['ID', 'Name', 'Department', 'Price', 'Quantity'],
+            colWidths: [10, 20, 20, 10, 10]
+        });
         for (var i = 0; i < res.length; i++) {
-            console.log(res[i].item_id + ". " + res[i].product_name + " ($" + res[i].price + ") " + res[i].stock_quantity + " unit(s)");
+            table.push(
+                [res[i].item_id, res[i].product_name, res[i].department_name, "$" + res[i].price, res[i].stock_quantity]
+            );
         }
-        console.log("\n************************");
+        console.log(table.toString());
+        console.log("End of inventory list");
+        console.log("************************\n");
         runSearch();
     });
 }
 
 // function to print low inventory list
 function lowInventorySearch() {
-    var query = "SELECT item_id, product_name, price, stock_quantity FROM products WHERE stock_quantity < 5";
+    var query = "SELECT item_id, product_name, department_name, price, stock_quantity FROM products WHERE stock_quantity < 5";
     connection.query(query, function (err, res) {
-        for (var i = 0; i < res.length; i++) {
-            console.log("==> " + res[i].item_id + ". " + res[i].product_name + " ($" + res[i].price + ") " + res[i].stock_quantity + " unit(s)");
+        if (res.length === 0) {
+            console.log("All quantities are up to date!");
+            console.log("************************\n");
+        } else {
+            // instantiate
+            var table = new Table({
+                head: ['ID', 'Name', 'Department', 'Price', 'Quantity'],
+                colWidths: [10, 20, 20, 10, 10]
+            });
+            for (var i = 0; i < res.length; i++) {
+                table.push(
+                    [res[i].item_id, res[i].product_name, res[i].department_name, "$" + res[i].price, res[i].stock_quantity]
+                );
+            }
+            console.log(table.toString());
             console.log("End of low inventory list");
-            console.log("\n************************");
+            console.log("************************\n");
         }
         runSearch();
     });
@@ -95,7 +119,7 @@ function inventoryAdd() {
         .prompt([{
             name: "inputId",
             type: "input",
-            message: "Enter the id number of the item you would like to add to the inventory",
+            message: "Enter the item id number you would like to add to the inventory: ",
         }
 
             // function to check if id # exists
@@ -104,9 +128,8 @@ function inventoryAdd() {
                 [managerCheck.inputId], function (err, res) {
                     if (res[0].quantity === 0) {
                         console.log("This item id does not exist");
-                        console.log("\n************************");
-                        connection.end();
-                        return false;
+                        console.log("************************\n");
+                        runSearch();
                     }
 
                     // function to add specific amount of items to inventory
@@ -114,11 +137,14 @@ function inventoryAdd() {
                         .prompt([{
                             name: "inputAmount",
                             type: "input",
-                            message: "How many units of this item would you like to add?",
+                            message: "Enter quantity of units you would you like to add: ",
                         }
                         ]).then(function (managerAdd) {
                             connection.query("UPDATE products SET stock_quantity = stock_quantity + ? WHERE item_id = ?", [
                                 managerAdd.inputAmount, managerCheck.inputId], function (err, res) {
+                                    if (err) throw err;
+                                    console.log("Item(s) added to inventory");
+                                    console.log("************************\n");
                                     runSearch();
                                 });
                         })
@@ -133,22 +159,22 @@ function newProductAdd() {
         .prompt([{
             name: "inputName",
             type: "input",
-            message: "Enter the item name you would like to add to the inventory",
+            message: "Enter the item name you would like to add to the inventory: ",
         },
         {
             name: "inputDept",
             type: "input",
-            message: "Enter the department you would like the item to be added to",
+            message: "Enter the department you would like the item to be added to: ",
         },
         {
             name: "inputPrice",
             type: "input",
-            message: "Enter the item price",
+            message: "Enter the item price: $",
         },
         {
             name: "inputAmount",
             type: "input",
-            message: "Enter the amount of units to be added",
+            message: "Enter the amount of units to be added: ",
         }
         ]).then(function (managerNewAdd) {
             connection.query("INSERT INTO products SET ?", [{
@@ -161,6 +187,8 @@ function newProductAdd() {
                     console.log(err);
                 }
             });
+            console.log("New item(s) added to inventory");
+            console.log("************************\n");
             runSearch();
         });
 }

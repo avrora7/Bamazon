@@ -1,5 +1,6 @@
 var mysql = require("mysql");
 var inquirer = require("inquirer");
+var Table = require("cli-table");
 
 // create the connection information for the sql database
 var connection = mysql.createConnection({
@@ -20,18 +21,27 @@ var connection = mysql.createConnection({
 connection.connect(function (err) {
     if (err) throw err;
     // run the start function after the connection is made to prompt the user
-    console.log("\n************************");
+    console.log("************************\n");
     start();
 });
 
 // function which prints items available for sale
 function start() {
-    var query = "SELECT item_id, product_name, price FROM products"
+    var query = "SELECT item_id, product_name, department_name, price FROM products"
     connection.query(query, function (err, res) {
+        if (err) throw err;
+
+        // instantiate
+        var table = new Table({
+            head: ['ID', 'Name', 'Department', 'Price'],
+            colWidths: [10, 20, 20, 10]
+        });
         for (var i = 0; i < res.length; i++) {
-            console.log(res[i].item_id + ". " + res[i].product_name + " ($" + res[i].price + ")");
+            table.push(
+                [res[i].item_id, res[i].product_name, res[i].department_name, "$" + res[i].price]
+            );
         }
-        console.log("\n************************");
+        console.log(table.toString());
         itemSelect();
     });
 }
@@ -42,7 +52,7 @@ function itemSelect() {
             {
                 name: "idSelection",
                 type: "input",
-                message: "Enter id of the item you would like to purchase:",
+                message: "Enter item id you would like to purchase: ",
                 validate: function (value) {
                     if (isNaN(value) === false) {
                         return true;
@@ -69,9 +79,10 @@ function itemSelect() {
             connection.query(query, [answer.idSelection], function (err, res) {
                 if (answer.quantitySelection > res[0].stock_quantity) {
                     console.log("Insufficient quantity!");
-                    return false;
+                    start();
+                } else {
+                    runPurchase(answer.idSelection, answer.quantitySelection);
                 }
-                runPurchase(answer.idSelection, answer.quantitySelection);
             });
         });
 }
@@ -80,6 +91,7 @@ function runPurchase(itemId, qty) {
     var query = "UPDATE products SET stock_quantity = stock_quantity - ? WHERE item_id = ?";
     connection.query(query, [qty, itemId], function (err, res) {
         console.log("You purchase was sucessful!");
+        console.log("Thank you for shopping with us!")
         connection.end();
         return true;
     });

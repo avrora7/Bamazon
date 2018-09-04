@@ -95,9 +95,13 @@ function itemSelect() {
 function runPurchase(itemId, qty) {
     var query = "UPDATE products SET stock_quantity = stock_quantity - ? WHERE item_id = ?";
     connection.query(query, [qty, itemId], function (err, res) {
-        console.log("You purchase was sucessful!");
-        console.log("Thank you for shopping with us!")
-        connection.end();
-        return true;
+        var query = "SELECT price FROM products WHERE item_id = ?";
+        connection.query(query, [itemId], function (err, res) {
+            var priceChosen = res[0].price;
+            console.log("Your total purchase price is $" + priceChosen * qty);
+            console.log("Thank you for shopping with us!")
+            connection.end();
+            return true;
+        });
     });
 }
